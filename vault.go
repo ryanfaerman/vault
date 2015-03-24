@@ -6,7 +6,7 @@ import (
 )
 
 var (
-  NotFoundError = errors.New("key not found")
+	NotFoundError  = errors.New("key not found")
 	KeyExistsError = errors.New("key exists")
 )
 
@@ -29,10 +29,10 @@ type Vault struct {
 }
 
 func New() *Vault {
-  return &Vault{
-    vault: make(map[string]Keyer),
-    stores: make([]Store, 0),
-  }
+	return &Vault{
+		vault:  make(map[string]Keyer),
+		stores: make([]Store, 0),
+	}
 }
 
 func (v *Vault) RegisterStore(s Store) {
@@ -49,13 +49,15 @@ func (v *Vault) Persist() error {
 		}()
 	}
 
-  // TODO: this really should return ALL errors, not just the first one
-  for range v.stores {
-    select {
-    case err := <-errs:
-      if err != nil { return err }
-    }
-  }
+	// TODO: this really should return ALL errors, not just the first one
+	for range v.stores {
+		select {
+		case err := <-errs:
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }
@@ -79,37 +81,37 @@ func (v *Vault) Load() error {
 }
 
 func (v *Vault) Exists(key string) bool {
-  _, ok := v.vault[key]
-  return ok
+	_, ok := v.vault[key]
+	return ok
 }
 
 func (v *Vault) Store(items ...Keyer) error {
-  v.mutex.Lock()
-  defer v.mutex.Unlock()
+	v.mutex.Lock()
+	defer v.mutex.Unlock()
 
-  for _, item := range items {
-    v.vault[item.Key()] = item
-  }
+	for _, item := range items {
+		v.vault[item.Key()] = item
+	}
 
-  return nil
+	return nil
 }
 
 func (v *Vault) Get(key string) (Keyer, error) {
-  if !v.Exists(key) {
-    return nil, NotFoundError
-  }
+	if !v.Exists(key) {
+		return nil, NotFoundError
+	}
 
-  return v.vault[key], nil
+	return v.vault[key], nil
 }
 
 func (v *Vault) Filter(f FilterFunc) map[string]Keyer {
-  filtered := map[string]Keyer{}
+	filtered := map[string]Keyer{}
 
-  for key, value := range v.vault {
-    if f(value) {
-      filtered[key] = value
-    }
-  }
+	for key, value := range v.vault {
+		if f(value) {
+			filtered[key] = value
+		}
+	}
 
-  return filtered
+	return filtered
 }
