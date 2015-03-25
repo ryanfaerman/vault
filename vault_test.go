@@ -40,7 +40,7 @@ func TestVaultCrud(t *testing.T) {
 
 	some_thing := &Thing{}
 
-	the_vault.Store(some_thing)
+	the_vault.Put(some_thing)
 
 	a, err := the_vault.Get(some_thing.Key())
 
@@ -54,7 +54,7 @@ func TestVaultCrud(t *testing.T) {
 func TestVaultFiltering(t *testing.T) {
 	the_vault := vault.New()
 
-	the_vault.Store(
+	the_vault.Put(
 		&Thing{Name: "Peter", Rank: 10},
 		&Thing{Name: "Piper", Rank: 11},
 		&Thing{Name: "Pickle", Rank: 19},
@@ -78,10 +78,10 @@ func TestVaultFiltering(t *testing.T) {
 func TestStoreRegistration(t *testing.T) {
 	the_vault := vault.New()
 	the_memory_store := &MemoryStore{Data: make(map[string]vault.Keyer)}
-	the_vault.RegisterStore(the_memory_store)
+	the_vault.Register(the_memory_store)
 
 	the_thing := &Thing{Name: "Peter", Rank: 10}
-	the_vault.Store(the_thing)
+	the_vault.Put(the_thing)
 
 	err := the_vault.Persist()
 	st.Expect(t, err, nil)
@@ -90,7 +90,7 @@ func TestStoreRegistration(t *testing.T) {
 	st.Expect(t, the_memory_store.Data[the_thing.Key()], the_thing)
 
 	another_vault := vault.New()
-	another_vault.RegisterStore(the_memory_store)
+	another_vault.Register(the_memory_store)
 	err = another_vault.Load()
 	st.Expect(t, err, nil)
 

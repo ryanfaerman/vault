@@ -14,7 +14,7 @@ type Keyer interface {
 	Key() string
 }
 
-type Store interface {
+type Persister interface {
 	Persist(map[string]Keyer) error
 	Load() (map[string]Keyer, error)
 }
@@ -25,32 +25,32 @@ type Vault struct {
 	mutex sync.Mutex
 	vault map[string]Keyer
 
-	stores []Store
+	persisters []Persister
 }
 
 func New() *Vault {
 	return &Vault{
 		vault:  make(map[string]Keyer),
-		stores: make([]Store, 0),
+		persisters: make([]Persister, 0),
 	}
 }
 
-func (v *Vault) RegisterStore(s Store) {
-	v.stores = append(v.stores, s)
+func (v *Vault) Register(s Persister) {
+	v.persisters = append(v.persisters, s)
 }
 
 func (v *Vault) Persist() error {
 	errs := make(chan error)
 	vault := v.vault
 
-	for _, store := range v.stores {
+	for _, store := range v.persisters {
 		go func() {
 			errs <- store.Persist(vault)
 		}()
 	}
 
 	// TODO: this really should return ALL errors, not just the first one
-	for range v.stores {
+	for range v.persisters {
 		select {
 		case err := <-errs:
 			if err != nil {
@@ -66,7 +66,7 @@ func (v *Vault) Load() error {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
-	for _, store := range v.stores {
+	for _, store := range v.persisters {
 		values, err := store.Load()
 		if err != nil {
 			return err
@@ -85,7 +85,7 @@ func (v *Vault) Exists(key string) bool {
 	return ok
 }
 
-func (v *Vault) Store(items ...Keyer) error {
+func (v *Vault) Put(items ...Keyer) error {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
