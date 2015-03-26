@@ -21,6 +21,20 @@ type Persister interface {
 
 type FilterFunc func(Keyer) bool
 
+type PersistanceError struct {
+	Errors []error
+}
+
+func (p *PersistanceError) Error() string {
+	err_msg := "One or more persistance errors occured: \n"
+
+	for _, err := range p.Errors {
+		err_msg = err_msg + "\t" + err.Error() + "\n"
+	}
+
+	return err_msg
+}
+
 type Vault struct {
 	mutex sync.Mutex
 	vault map[string]Keyer
@@ -49,14 +63,19 @@ func (v *Vault) Persist() error {
 		}()
 	}
 
-	// TODO: this really should return ALL errors, not just the first one
+	var p_errs *PersistanceError
 	for range v.persisters {
 		select {
 		case err := <-errs:
 			if err != nil {
-				return err
+				if p_errs == nil { p_errs = &PersistanceError{} }
+				p_errs.Errors = append(p_errs.Errors, err)
 			}
 		}
+	}
+
+	if p_errs != nil {
+		return p_errs
 	}
 
 	return nil
