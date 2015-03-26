@@ -10,17 +10,30 @@ var (
 	KeyExistsError = errors.New("key exists")
 )
 
+// Keyer represents anything that can be stored in the Vault
 type Keyer interface {
+	// Key should always return the same key for the same object
+	// If it doesn't, you'll get multiple copies
 	Key() string
 }
 
+// Persister represents long term storage
 type Persister interface {
+	// Persist may be called at any time. It may not receive
+	// the entire vault.
 	Persist(map[string]Keyer) error
+
+	// Load should retreive the entire dataset from the persister.
+	// Generally, this will only be called when the application starts.
 	Load() (map[string]Keyer, error)
 }
 
 type FilterFunc func(Keyer) bool
 
+// PersistanceError captures all the errors that occur during a
+// persistance attempt. Any of the persisters may have errors.
+// Receiving a PersistanceError may not mean that persistance has
+// failed entirely, just that one or more Persisters have failed.
 type PersistanceError struct {
 	Errors []error
 }
@@ -49,10 +62,14 @@ func New() *Vault {
 	}
 }
 
+// Register lets you add a Persister
 func (v *Vault) Register(s Persister) {
 	v.persisters = append(v.persisters, s)
 }
 
+// Persist gives a copy of the vault to each persister.
+// The actual persistance occurs in parallel and this method
+// will not return until all have finished their tasks.
 func (v *Vault) Persist() error {
 	errs := make(chan error)
 	vault := v.vault
@@ -81,6 +98,9 @@ func (v *Vault) Persist() error {
 	return nil
 }
 
+// Load retrieves a persisted vault from every persister.
+// This happens serially and generally only occurs when the
+// application starts.
 func (v *Vault) Load() error {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
@@ -99,11 +119,14 @@ func (v *Vault) Load() error {
 	return nil
 }
 
+// Exists is a simple presence check for a key in the vault
 func (v *Vault) Exists(key string) bool {
 	_, ok := v.vault[key]
 	return ok
 }
 
+// Put performs a thread-safe write of one or more
+// Keyers to the vault.
 func (v *Vault) Put(items ...Keyer) error {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
@@ -115,6 +138,7 @@ func (v *Vault) Put(items ...Keyer) error {
 	return nil
 }
 
+// Get retrieves the value matching the given key.
 func (v *Vault) Get(key string) (Keyer, error) {
 	if !v.Exists(key) {
 		return nil, NotFoundError
@@ -123,6 +147,7 @@ func (v *Vault) Get(key string) (Keyer, error) {
 	return v.vault[key], nil
 }
 
+// Filter the vault with the given FilterFunc
 func (v *Vault) Filter(f FilterFunc) map[string]Keyer {
 	filtered := map[string]Keyer{}
 
