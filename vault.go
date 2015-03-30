@@ -57,7 +57,7 @@ type Vault struct {
 
 func New() *Vault {
 	return &Vault{
-		vault:  make(map[string]Keyer),
+		vault:      make(map[string]Keyer),
 		persisters: make([]Persister, 0),
 	}
 }
@@ -85,7 +85,9 @@ func (v *Vault) Persist() error {
 		select {
 		case err := <-errs:
 			if err != nil {
-				if p_errs == nil { p_errs = &PersistanceError{} }
+				if p_errs == nil {
+					p_errs = &PersistanceError{}
+				}
 				p_errs.Errors = append(p_errs.Errors, err)
 			}
 		}
