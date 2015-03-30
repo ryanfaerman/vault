@@ -100,3 +100,29 @@ func TestStoreRegistration(t *testing.T) {
 	st.Expect(t, item, the_thing)
 
 }
+
+func BenchmarkVaultSerialFiltering(b *testing.B) {
+	the_vault := vault.New()
+
+	// Let's shove a ton of stuff into the vault
+	for i := 0; i < 10000; i++ {
+		the_vault.Put(&Thing{Name: vault.Token()})
+	}
+
+	// The one thing we're going to look for
+	the_vault.Put(&Thing{Name: "New Orleans"})
+
+	// Let's bury our needle, just for fun
+	for i := 0; i < 10000; i++ {
+		the_vault.Put(&Thing{Name: vault.Token()})
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		the_vault.Filter(func(item vault.Keyer) bool {
+			return item.(*Thing).Name == "New Orleans"
+		})
+	}
+
+}
