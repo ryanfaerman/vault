@@ -101,6 +101,20 @@ func TestStoreRegistration(t *testing.T) {
 
 }
 
+func TestVaultSize(t *testing.T) {
+	the_vault := vault.New()
+
+	st.Expect(t, the_vault.Size(), 0)
+
+	the_vault.Put(&Thing{Name: "Peter Parker"})
+
+	st.Expect(t, the_vault.Size(), 1)
+
+	the_vault.Put(&Thing{Name: "Tony Stark"}, &Thing{Name: "Frank Castle"})
+
+	st.Expect(t, the_vault.Size(), 3)
+}
+
 func BenchmarkVaultSerialFiltering(b *testing.B) {
 	the_vault := vault.New()
 

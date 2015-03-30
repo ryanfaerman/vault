@@ -127,6 +127,10 @@ func (v *Vault) Exists(key string) bool {
 	return ok
 }
 
+func (v *Vault) Size() int {
+	return len(v.vault)
+}
+
 // Put performs a thread-safe write of one or more
 // Keyers to the vault.
 func (v *Vault) Put(items ...Keyer) error {
